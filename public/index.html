@@ -6,19 +6,36 @@
 </head>
 <body>
     <div class="container">
-        <!-- Status Banner - Compact Version -->
-        <div id="statusBanner" style="
-            text-align: center;
-            padding: 6px 20px;
-            border-radius: 20px;
-            margin: 0 auto 16px auto;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            display: none;
-            width: fit-content;
-            max-width: 100%;
-        ">
+        <!-- Status Banners -->
+        <div id="statusContainer" style="text-align: center; margin-bottom: 16px;">
+            <!-- Online/Offline Banner -->
+            <div id="statusBanner" style="
+                display: none;
+                padding: 6px 20px;
+                border-radius: 20px;
+                margin: 0 auto 8px auto;
+                font-weight: 600;
+                font-size: 14px;
+                width: fit-content;
+                max-width: 100%;
+            ">
+            </div>
+            
+            <!-- Custom Message Banner (Yellow) -->
+            <div id="customMessageBanner" style="
+                display: none;
+                padding: 6px 20px;
+                border-radius: 20px;
+                margin: 0 auto;
+                font-weight: 500;
+                font-size: 13px;
+                width: fit-content;
+                max-width: 100%;
+                background: rgba(241, 196, 15, 0.15);
+                border: 1px solid rgba(241, 196, 15, 0.3);
+                color: #f7dc6f;
+            ">
+            </div>
         </div>
 
         <div class="header">
@@ -266,21 +283,32 @@
             try {
                 const response = await fetch('/api/get-status');
                 const data = await response.json();
-                const banner = document.getElementById('statusBanner');
+                const statusBanner = document.getElementById('statusBanner');
+                const customBanner = document.getElementById('customMessageBanner');
                 
+                // Show/hide and style the status banner
                 if (data.status === 'online') {
-                    banner.style.display = 'block';
-                    banner.style.background = 'rgba(46, 204, 113, 0.15)';
-                    banner.style.border = '1px solid rgba(46, 204, 113, 0.3)';
-                    banner.style.color = '#2ecc71';
-                    banner.textContent = '🟢 Editor is Online';
+                    statusBanner.style.display = 'block';
+                    statusBanner.style.background = 'rgba(46, 204, 113, 0.15)';
+                    statusBanner.style.border = '1px solid rgba(46, 204, 113, 0.3)';
+                    statusBanner.style.color = '#2ecc71';
+                    statusBanner.textContent = '🟢 Editor is Online';
                 } else {
-                    banner.style.display = 'block';
-                    banner.style.background = 'rgba(231, 76, 60, 0.15)';
-                    banner.style.border = '1px solid rgba(231, 76, 60, 0.3)';
-                    banner.style.color = '#e74c3c';
-                    banner.textContent = '🔴 Editor is Offline';
+                    statusBanner.style.display = 'block';
+                    statusBanner.style.background = 'rgba(231, 76, 60, 0.15)';
+                    statusBanner.style.border = '1px solid rgba(231, 76, 60, 0.3)';
+                    statusBanner.style.color = '#e74c3c';
+                    statusBanner.textContent = '🔴 Editor is Offline';
                 }
+                
+                // Show custom message if it exists
+                if (data.message && data.message.trim() !== '') {
+                    customBanner.style.display = 'block';
+                    customBanner.textContent = '📌 ' + data.message;
+                } else {
+                    customBanner.style.display = 'none';
+                }
+                
             } catch (error) {
                 console.error('Error loading status:', error);
             }
