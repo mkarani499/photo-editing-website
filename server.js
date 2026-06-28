@@ -19,6 +19,10 @@ const getOrders = require('./api/get-orders');
 const updateWhatsApp = require('./api/update-whatsapp');
 const getWhatsApp = require('./api/get-whatsapp');
 
+// ✅ ADDED: Import Status handlers
+const updateStatus = require('./api/update-status');
+const getStatus = require('./api/get-status');
+
 const app = express();
 const PORT = 3000;
 
@@ -64,6 +68,15 @@ app.post('/api/update-whatsapp', (req, res) => {
 
 app.get('/api/get-whatsapp', (req, res) => {
     getWhatsApp(req, res);
+});
+
+// ✅ ADDED: Status routes
+app.post('/api/update-status', (req, res) => {
+    updateStatus(req, res);
+});
+
+app.get('/api/get-status', (req, res) => {
+    getStatus(req, res);
 });
 
 // Serve HTML

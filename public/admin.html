@@ -38,6 +38,55 @@
 
             <hr style="margin:30px 0;">
 
+            <!-- Editor Status Management -->
+            <div style="margin-top:30px; padding-top:30px; border-top:1px solid rgba(255,255,255,0.1);">
+                <h3 style="color:white; font-size:18px; font-weight:600; margin-bottom:12px;">
+                    🟢 Editor Status
+                </h3>
+                <p style="color:rgba(255,255,255,0.4); font-size:14px; margin-bottom:10px;">
+                    Toggle your availability. Photographers will see this on the homepage.
+                </p>
+                
+                <!-- Current status display -->
+                <div id="currentStatusDisplay" style="
+                    background: rgba(255,255,255,0.04);
+                    padding: 12px 16px;
+                    border-radius: 10px;
+                    margin-bottom: 15px;
+                    border: 1px solid rgba(255,255,255,0.06);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                ">
+                    <span style="color:rgba(255,255,255,0.4); font-size:13px;">Current Status:</span>
+                    <span id="currentStatusText" style="font-size:16px; font-weight:600;">Loading...</span>
+                </div>
+                
+                <!-- Toggle buttons -->
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button onclick="setStatus('online')" class="btn-admin btn-admin-success" 
+                            style="flex:1; padding:14px 20px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; min-width:120px;">
+                        🟢 Set Online
+                    </button>
+                    <button onclick="setStatus('offline')" class="btn-admin btn-admin-danger" 
+                            style="flex:1; padding:14px 20px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; min-width:120px;">
+                        🔴 Set Offline
+                    </button>
+                </div>
+                
+                <!-- Custom message input -->
+                <div style="margin-top:12px;">
+                    <input type="text" id="statusMessageInput" placeholder="Custom message (optional)" 
+                           style="width:100%; padding:12px 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:white; font-size:14px;">
+                </div>
+                
+                <div id="statusResult" style="margin-top:10px;"></div>
+            </div>
+
+            <hr style="margin:30px 0;">
+
             <!-- WhatsApp Number Management -->
             <div style="margin-top:30px; padding-top:30px; border-top:1px solid rgba(255,255,255,0.1);">
                 <h3 style="color:white; font-size:18px; font-weight:600; margin-bottom:12px;">
@@ -83,6 +132,8 @@
                 document.getElementById('adminSection').style.display = 'block';
                 // Load WhatsApp number when admin logs in
                 loadWhatsAppNumber();
+                // Load status when admin logs in
+                loadStatus();
             } else {
                 alert('❌ Incorrect password');
             }
@@ -242,6 +293,62 @@
                 console.error('Error loading WhatsApp number:', error);
                 document.getElementById('currentWhatsAppDisplay').textContent = '0712 345 678';
                 document.getElementById('whatsappInput').placeholder = 'Error loading current number';
+            }
+        }
+
+        // Status Functions
+        // Load current status when admin loads
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/get-status');
+                const data = await response.json();
+                const statusText = document.getElementById('currentStatusText');
+                
+                if (data.status === 'online') {
+                    statusText.style.color = '#2ecc71';
+                    statusText.textContent = '🟢 Online';
+                } else {
+                    statusText.style.color = '#e74c3c';
+                    statusText.textContent = '🔴 Offline';
+                }
+            } catch (error) {
+                console.error('Error loading status:', error);
+                document.getElementById('currentStatusText').textContent = '❌ Error loading';
+            }
+        }
+
+        // Set status function
+        async function setStatus(status) {
+            const resultDiv = document.getElementById('statusResult');
+            const messageInput = document.getElementById('statusMessageInput');
+            const message = messageInput.value.trim();
+            
+            resultDiv.innerHTML = '<span style="color:rgba(255,255,255,0.6);">⏳ Updating status...</span>';
+            
+            try {
+                const response = await fetch('/api/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: status,
+                        adminKey: ADMIN_PASSWORD,
+                        message: message || undefined
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<span style="color:#2ecc71;">✅ Status updated to: <strong>${status}</strong></span>`;
+                    // Reload status display
+                    loadStatus();
+                    // Clear message input
+                    messageInput.value = '';
+                } else {
+                    resultDiv.innerHTML = `<span style="color:#e74c3c;">❌ ${data.error || 'Failed to update'}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span style="color:#e74c3c;">❌ Error: ${error.message}</span>`;
             }
         }
 
