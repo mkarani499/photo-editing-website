@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>🔐 Admin Panel</h2>
+        <p class="subtitle">Verify M-Pesa payments and manage orders</p>
+
+        <!-- Login Section -->
+        <div id="loginSection">
+            <label>Admin Password:</label>
+            <input type="password" id="adminPassword" placeholder="Enter admin password">
+            <button onclick="login()" style="margin-top:10px;">Login</button>
+        </div>
+
+        <!-- Admin Section (hidden until login) -->
+        <div id="adminSection" style="display:none;">
+            <div style="padding:15px; background:#d4edda; border-radius:8px; margin:15px 0;">
+                ✅ Logged in as Admin
+            </div>
+
+            <!-- Verify Payment -->
+            <h3>🔍 Verify Payment</h3>
+            <p>Paste the CheckoutRequestID from WhatsApp:</p>
+            <input type="text" id="checkoutID" placeholder="ws_CO_..." style="width:100%; padding:10px; margin:10px 0;">
+            <button onclick="verifyPayment()" style="background:#27ae60;">Verify Payment</button>
+            <div id="verifyResult" style="margin-top:15px;"></div>
+
+            <hr style="margin:30px 0;">
+
+            <!-- View Orders -->
+            <h3>📊 Recent Orders</h3>
+            <button onclick="loadOrders()">Load Orders</button>
+            <div id="ordersList" style="margin-top:15px;"></div>
+
+            <hr style="margin:30px 0;">
+
+            <!-- WhatsApp Number Management -->
+            <div style="margin-top:30px; padding-top:30px; border-top:1px solid rgba(255,255,255,0.1);">
+                <h3 style="color:white; font-size:18px; font-weight:600; margin-bottom:12px;">
+                    📱 WhatsApp Number
+                </h3>
+                <p style="color:rgba(255,255,255,0.4); font-size:14px; margin-bottom:10px;">
+                    This number will be used for the WhatsApp link on the success page.
+                </p>
+                
+                <!-- Display current number -->
+                <div style="background:rgba(255,255,255,0.04); padding:12px 16px; border-radius:10px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.06);">
+                    <span style="color:rgba(255,255,255,0.4); font-size:13px;">Current WhatsApp Number:</span>
+                    <span id="currentWhatsAppDisplay" style="color:#2ecc71; font-size:16px; font-weight:600; margin-left:8px;">Loading...</span>
+                </div>
+                
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <input type="tel" id="whatsappInput" placeholder="0757133071" 
+                           style="flex:1; padding:12px 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:white; font-size:16px; min-width:200px;">
+                    <button onclick="updateWhatsApp()" class="btn-admin btn-admin-success" 
+                            style="padding:12px 24px; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer;">
+                        💾 Save Number
+                    </button>
+                </div>
+                <div id="whatsappResult" style="margin-top:10px;"></div>
+            </div>
+
+            <hr style="margin:30px 0;">
+
+            <!-- Logout -->
+            <button onclick="logout()" style="background:#dc3545;">Logout</button>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = 'markkaranigitonga';
+        let isLoggedIn = false;
+
+        function login() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                isLoggedIn = true;
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminSection').style.display = 'block';
+                // Load WhatsApp number when admin logs in
+                loadWhatsAppNumber();
+            } else {
+                alert('❌ Incorrect password');
+            }
+        }
+
+        async function verifyPayment() {
+            const checkoutID = document.getElementById('checkoutID').value.trim();
+            const resultDiv = document.getElementById('verifyResult');
+
+            if (!checkoutID) {
+                alert('Please enter a CheckoutRequestID');
+                return;
+            }
+
+            resultDiv.innerHTML = '⏳ Checking payment...';
+
+            try {
+                const response = await fetch('/api/verify-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        checkoutRequestID: checkoutID,
+                        adminKey: ADMIN_PASSWORD
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success !== undefined) {
+                    const statusClass = data.success ? 'message-success' : 'message-error';
+                    resultDiv.innerHTML = `
+                        <div class="message ${statusClass}">
+                            <strong>${data.status}</strong>
+                            <p>Result Code: ${data.resultCode || 'N/A'}</p>
+                            <p>Description: ${data.resultDesc || 'N/A'}</p>
+                            ${data.order ? `
+                                <hr>
+                                <p><strong>Order Details:</strong></p>
+                                <p>Order: ${data.order.order_number || 'N/A'}</p>
+                                <p>Phone: ${data.order.customer_phone || 'N/A'}</p>
+                                <p>Photos: ${data.order.photo_count || 'N/A'}</p>
+                                <p>Amount: ${data.order.amount || 'N/A'} KES</p>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="message message-error">❌ ${data.error || 'Verification failed'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="message message-error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function loadOrders() {
+            const ordersList = document.getElementById('ordersList');
+            ordersList.innerHTML = '⏳ Loading orders...';
+
+            try {
+                const response = await fetch('/api/get-orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminKey: ADMIN_PASSWORD })
+                });
+
+                const data = await response.json();
+
+                if (data.orders && data.orders.length > 0) {
+                    let html = '<div style="max-height:400px; overflow-y:auto;">';
+                    data.orders.forEach(order => {
+                        const statusColor = order.status === 'paid' ? '#27ae60' : 
+                                           order.status === 'failed' ? '#dc3545' : '#f39c12';
+                        html += `
+                            <div style="border:1px solid #ddd; padding:10px; margin-bottom:10px; border-radius:8px;">
+                                <strong>${order.order_number || 'N/A'}</strong>
+                                <span style="color:${statusColor}; float:right;">${order.status || 'pending'}</span>
+                                <br>
+                                <span style="font-size:14px; color:#666;">
+                                    ${order.photo_count || '?'} photos - ${order.amount || '?'} KES
+                                    ${order.customer_phone ? `- ${order.customer_phone}` : ''}
+                                </span>
+                                <br>
+                                <span style="font-size:12px; color:#999;">
+                                    ${order.created_at ? new Date(order.created_at).toLocaleString() : ''}
+                                </span>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    ordersList.innerHTML = html;
+                } else {
+                    ordersList.innerHTML = '<p>No orders found.</p>';
+                }
+            } catch (error) {
+                ordersList.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // WhatsApp Number Functions
+        async function updateWhatsApp() {
+            const number = document.getElementById('whatsappInput').value.trim();
+            const resultDiv = document.getElementById('whatsappResult');
+            
+            if (!number) {
+                resultDiv.innerHTML = '<span style="color:#e74c3c;">Please enter a phone number</span>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<span style="color:rgba(255,255,255,0.6);">⏳ Saving...</span>';
+            
+            try {
+                const response = await fetch('/api/update-whatsapp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        whatsappNumber: number,
+                        adminKey: ADMIN_PASSWORD
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<span style="color:#2ecc71;">✅ ${data.message} (${data.whatsappNumber})</span>`;
+                    document.getElementById('whatsappInput').value = '';
+                    // Reload the current number to update placeholder
+                    loadWhatsAppNumber();
+                } else {
+                    resultDiv.innerHTML = `<span style="color:#e74c3c;">❌ ${data.error || 'Failed to save'}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span style="color:#e74c3c;">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        // Load current WhatsApp number when admin loads
+        async function loadWhatsAppNumber() {
+            try {
+                const response = await fetch('/api/get-whatsapp');
+                const data = await response.json();
+                if (data.whatsappNumber) {
+                    const phone = data.whatsappNumber;
+                    // Format for display
+                    let displayPhone = phone;
+                    if (phone.startsWith('254')) {
+                        displayPhone = '0' + phone.substring(3);
+                    }
+                    if (displayPhone.length === 10) {
+                        displayPhone = displayPhone.substring(0, 4) + ' ' + displayPhone.substring(4, 7) + ' ' + displayPhone.substring(7);
+                    }
+                    document.getElementById('currentWhatsAppDisplay').textContent = displayPhone;
+                    document.getElementById('whatsappInput').placeholder = 'Current: ' + displayPhone;
+                } else {
+                    document.getElementById('currentWhatsAppDisplay').textContent = 'Not set';
+                    document.getElementById('whatsappInput').placeholder = 'No number set - enter a new one';
+                }
+            } catch (error) {
+                console.error('Error loading WhatsApp number:', error);
+                document.getElementById('currentWhatsAppDisplay').textContent = '0712 345 678';
+                document.getElementById('whatsappInput').placeholder = 'Error loading current number';
+            }
+        }
+
+        function logout() {
+            isLoggedIn = false;
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+        }
+    </script>
+</body>
+</html>

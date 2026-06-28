@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Initiated</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="logo-icon">📱</span>
+            <h1 style="font-size:32px;">Uskan Editing Service</h1>
+            <p class="subtitle" style="font-size:14px;">Check your phone for payment confirmation</p>
+        </div>
+
+        <div class="message show message-info">
+            ⏳ Please check your phone now — enter your M-Pesa PIN to complete the payment.
+        </div>
+
+        <h3 style="color:rgba(255,255,255,0.6); font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-top:24px;">
+            This is your code
+        </h3>
+        <div class="code-box">
+            <code id="checkoutCode">Loading...</code>
+        </div>
+        <button class="btn-copy" onclick="copyCode()">📋 Copy Code</button>
+
+        <h3 style="color:rgba(255,255,255,0.6); font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-top:28px;">
+            Send to us on WhatsApp
+        </h3>
+
+        <!-- WhatsApp number display -->
+        <div style="text-align:center; margin-bottom:12px;">
+            <span style="color:rgba(255,255,255,0.3); font-size:13px;">📱 Send to: </span>
+            <span id="whatsappNumberDisplay" style="color:rgba(255,255,255,0.6); font-size:14px; font-weight:500;">Loading...</span>
+        </div>
+
+        <p style="color:rgba(255,255,255,0.3); font-size:14px; margin-bottom:10px;">
+            Click the button below to send your code
+        </p>
+        <a id="whatsappLink" href="#" target="_blank" class="btn-whatsapp">
+            💬 Send Code on WhatsApp
+        </a>
+
+        <div style="margin-top:24px; padding:16px 20px; background:rgba(255,255,255,0.03); border-radius:14px; border:1px solid rgba(255,255,255,0.06);">
+            <p style="font-size:13px; color:rgba(255,255,255,0.4); margin:0; line-height:1.6;">
+                <strong style="color:rgba(255,255,255,0.6);">📝 What happens next?</strong><br>
+                1. You'll receive a confirmation from us on WhatsApp<br>
+                2. We'll confirm your payment and request your photos<br>
+                3. Send your photos and we'll start editing!
+            </p>
+        </div>
+
+        <a href="/" style="display:block; text-align:center; margin-top:20px; color:rgba(255,255,255,0.3); text-decoration:none; font-size:14px; transition:color 0.3s;" 
+           onmouseover="this.style.color='rgba(255,255,255,0.6)'" 
+           onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+            ← Back to Home
+        </a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code') || localStorage.getItem('checkoutRequestID');
+
+        const codeElement = document.getElementById('checkoutCode');
+        const whatsappLink = document.getElementById('whatsappLink');
+        const whatsappNumberDisplay = document.getElementById('whatsappNumberDisplay');
+
+        // Get WhatsApp number from server
+        async function loadWhatsAppNumber() {
+            try {
+                const response = await fetch('/api/get-whatsapp');
+                const data = await response.json();
+                const phone = data.whatsappNumber || '254712345678';
+                
+                // Format for display
+                let displayPhone = phone;
+                if (phone.startsWith('254')) {
+                    displayPhone = '0' + phone.substring(3);
+                }
+                if (displayPhone.length === 10) {
+                    displayPhone = displayPhone.substring(0, 4) + ' ' + displayPhone.substring(4, 7) + ' ' + displayPhone.substring(7);
+                }
+                
+                whatsappNumberDisplay.textContent = displayPhone;
+                
+                if (code) {
+                    codeElement.textContent = code;
+                    whatsappLink.href = `https://wa.me/${phone}?text=${encodeURIComponent(code)}`;
+                    localStorage.setItem('checkoutRequestID', code);
+                } else {
+                    codeElement.textContent = 'Error: No code found';
+                    whatsappLink.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading WhatsApp number:', error);
+                whatsappNumberDisplay.textContent = '0757 133 071';
+            }
+        }
+
+        loadWhatsAppNumber();
+
+        function copyCode() {
+            const code = document.getElementById('checkoutCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ Code copied to clipboard!');
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('✅ Code copied to clipboard!');
+            });
+        }
+    </script>
+</body>
+</html>

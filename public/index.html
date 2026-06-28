@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photo Editing Service</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="status-badge online" id="statusBadge">🟢 Online</span>
+            <span class="logo-icon">📸</span>
+            <h1><span class="highlight">Uskan</span> Editing Service</h1>
+            <p class="subtitle">Professional photo editing for photographers — pay per photo</p>
+            
+            <!-- WhatsApp Display -->
+            <div class="whatsapp-display" id="whatsappDisplay" style="text-align:center; margin:10px 0 5px 0;">
+                <span style="color:rgba(255,255,255,0.3); font-size:13px;">📱 Contact us on WhatsApp: </span>
+                <span id="whatsappNumberDisplay" style="color:rgba(255,255,255,0.6); font-size:13px; font-weight:500;">Loading...</span>
+            </div>
+        </div>
+
+        <form id="paymentForm">
+            <!-- Pricing Tiers -->
+            <div class="pricing-tiers">
+                <div class="tier tier-basic" data-tier="basic" onclick="selectTier('basic')">
+                    <div class="checkmark">✓</div>
+                    <span class="tier-icon">📋</span>
+                    <h3>Basic</h3>
+                    <div class="price">10 <span style="font-size:16px; color:rgba(255,255,255,0.4);">KES</span></div>
+                    <div class="per-photo">per photo</div>
+                    <div class="time">⏱️ 8 min per photo</div>
+                    <div class="badge">Bulk Management</div>
+                    
+                    <!-- Professional button -->
+                    <button class="tier-btn" onclick="event.stopPropagation(); selectTier('basic')">
+                        Select Basic
+                    </button>
+                </div>
+
+                <div class="tier tier-standard" data-tier="standard" onclick="selectTier('standard')">
+                    <div class="checkmark">✓</div>
+                    <span class="tier-icon">✨</span>
+                    <h3>Standard</h3>
+                    <div class="price">16 <span style="font-size:16px; color:rgba(255,255,255,0.4);">KES</span></div>
+                    <div class="per-photo">per photo</div>
+                    <div class="time">⏱️ 15 min per photo</div>
+                    <div class="badge">Polished Editing</div>
+                    
+                    <!-- Professional button -->
+                    <button class="tier-btn" onclick="event.stopPropagation(); selectTier('standard')">
+                        Select Standard
+                    </button>
+                </div>
+
+                <div class="tier tier-premium" data-tier="premium" onclick="selectTier('premium')">
+                    <div class="checkmark">✓</div>
+                    <span class="tier-icon">⭐</span>
+                    <h3>Premium</h3>
+                    <div class="price">30 <span style="font-size:16px; color:rgba(255,255,255,0.4);">KES</span></div>
+                    <div class="per-photo">per photo</div>
+                    <div class="time">⏱️ 25 min per photo</div>
+                    <div class="badge">Flawless Editing</div>
+                    
+                    <!-- Professional button -->
+                    <button class="tier-btn" onclick="event.stopPropagation(); selectTier('premium')">
+                        Select Premium
+                    </button>
+                </div>
+            </div>
+
+            <input type="hidden" id="selectedTier" value="">
+
+            <div class="form-group">
+                <label>📷 Number of Photos</label>
+                <input type="number" id="photoCount" placeholder="Enter number of photos..." min="1">
+            </div>
+
+            <div class="form-group">
+                <label>📱 M-Pesa Phone Number</label>
+                <input type="tel" id="phoneNumber" placeholder="0712345678">
+            </div>
+
+            <div class="info-display">
+                <div class="total" id="totalDisplay">0 <span class="currency">KES</span></div>
+                <div class="time" id="timeDisplay">Select a tier &amp; enter photo count</div>
+            </div>
+
+            <button type="submit" class="btn btn-pay" id="payButton">
+                💳 Pay with M-Pesa
+            </button>
+        </form>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        const photoInput = document.getElementById('photoCount');
+        const phoneInput = document.getElementById('phoneNumber');
+        const totalDisplay = document.getElementById('totalDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const payButton = document.getElementById('payButton');
+        const messageDiv = document.getElementById('message');
+        const selectedTierInput = document.getElementById('selectedTier');
+
+        let selectedTier = null;
+
+        const tiers = {
+            basic: { price: 10, timePerPhoto: 8, label: 'Basic' },
+            standard: { price: 16, timePerPhoto: 15, label: 'Standard' },
+            premium: { price: 30, timePerPhoto: 25, label: 'Premium' }
+        };
+
+        function selectTier(tier) {
+            selectedTier = tier;
+            selectedTierInput.value = tier;
+
+            document.querySelectorAll('.tier').forEach(t => t.classList.remove('selected'));
+            document.querySelector(`.tier-${tier}`).classList.add('selected');
+
+            updateInfo();
+        }
+
+        function updateInfo() {
+            const photoCount = parseInt(photoInput.value) || 0;
+            
+            if (selectedTier && photoCount > 0) {
+                const tier = tiers[selectedTier];
+                const total = tier.price * photoCount;
+                const totalMinutes = tier.timePerPhoto * photoCount;
+                
+                let timeText = '';
+                if (totalMinutes >= 60) {
+                    const hours = Math.floor(totalMinutes / 60);
+                    const mins = totalMinutes % 60;
+                    timeText = hours + 'h ' + mins + 'min';
+                } else {
+                    timeText = totalMinutes + ' min';
+                }
+
+                totalDisplay.innerHTML = total + ' <span class="currency">KES</span>';
+                timeDisplay.innerHTML = '⏱️ ' + photoCount + ' photos × ' + tier.timePerPhoto + 'min = <strong>' + timeText + '</strong>';
+            } else if (selectedTier && photoCount === 0) {
+                totalDisplay.innerHTML = '0 <span class="currency">KES</span>';
+                timeDisplay.textContent = 'Enter number of photos';
+            } else if (!selectedTier && photoCount > 0) {
+                totalDisplay.innerHTML = '0 <span class="currency">KES</span>';
+                timeDisplay.textContent = 'Select a tier above';
+            } else {
+                totalDisplay.innerHTML = '0 <span class="currency">KES</span>';
+                timeDisplay.textContent = 'Select a tier &amp; enter photo count';
+            }
+        }
+
+        photoInput.addEventListener('input', updateInfo);
+
+        // Show/hide message
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = 'message show message-' + type;
+        }
+
+        function hideMessage() {
+            messageDiv.className = 'message';
+        }
+
+        document.getElementById('paymentForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const photoCount = parseInt(photoInput.value);
+            const phone = phoneInput.value.trim();
+            
+            if (!selectedTier) {
+                showMessage('Please select a tier (Basic, Standard, or Premium)', 'error');
+                return;
+            }
+            
+            if (!photoCount || photoCount < 1) {
+                showMessage('Please enter the number of photos', 'error');
+                return;
+            }
+            
+            if (!phone) {
+                showMessage('Please enter your M-Pesa phone number', 'error');
+                return;
+            }
+
+            const tierData = tiers[selectedTier];
+            const amount = tierData.price * photoCount;
+            
+            payButton.disabled = true;
+            payButton.textContent = '⏳ Processing...';
+            showMessage('Sending payment request...', 'info');
+            
+            try {
+                const response = await fetch('/api/initiate-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phone,
+                        photoCount: photoCount,
+                        tier: selectedTier,
+                        amount: amount
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem('checkoutRequestID', data.checkoutRequestID);
+                    localStorage.setItem('orderNumber', data.orderNumber);
+                    window.location.href = `/success.html?code=${data.checkoutRequestID}`;
+                } else {
+                    throw new Error(data.error || 'Payment initiation failed');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage(error.message, 'error');
+                payButton.disabled = false;
+                payButton.textContent = '💳 Pay with M-Pesa';
+            }
+        });
+
+        // Load WhatsApp number for display
+        async function loadWhatsAppNumber() {
+            try {
+                const response = await fetch('/api/get-whatsapp');
+                const data = await response.json();
+                const phone = data.whatsappNumber || '254712345678';
+                
+                // Format for display (e.g., 0712 345 678)
+                let displayPhone = phone;
+                if (phone.startsWith('254')) {
+                    displayPhone = '0' + phone.substring(3);
+                }
+                // Format with spaces: 0712 345 678
+                if (displayPhone.length === 10) {
+                    displayPhone = displayPhone.substring(0, 4) + ' ' + displayPhone.substring(4, 7) + ' ' + displayPhone.substring(7);
+                }
+                
+                document.getElementById('whatsappNumberDisplay').textContent = displayPhone;
+            } catch (error) {
+                console.error('Error loading WhatsApp number:', error);
+                document.getElementById('whatsappNumberDisplay').textContent = '0757 133 071';
+            }
+        }
+
+        loadWhatsAppNumber();
+    </script>
+</body>
+</html>

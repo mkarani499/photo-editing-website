@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Initiated</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>📱 Check Your Phone</h2>
+        <p class="subtitle">A payment request has been sent to your M-Pesa</p>
+
+        <div style="padding:15px; background:#d1ecf1; border-radius:8px; margin:15px 0;">
+            <strong>⏳ Please check your phone now</strong>
+            <p style="margin-top:5px;">Enter your M-Pesa PIN to complete the payment.</p>
+        </div>
+
+        <h3>Step 1: Copy This Code</h3>
+        <div style="background:#f0f4f8; padding:15px; border-radius:8px; text-align:center; margin:10px 0;">
+            <code id="checkoutCode" style="font-size:18px; font-weight:bold;">Loading...</code>
+        </div>
+        <button onclick="copyCode()" style="width:100%; padding:12px; background:#6c757d; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer;">
+            📋 Copy Code
+        </button>
+
+        <h3 style="margin-top:20px;">Step 2: Send It to Us</h3>
+        <p>Click the WhatsApp button below. The code will be pre-filled.</p>
+        <a id="whatsappLink" href="#" target="_blank" style="display:block; width:100%; padding:14px; background:#25D366; color:white; border:none; border-radius:8px; font-size:18px; font-weight:bold; text-align:center; text-decoration:none; margin-top:10px;">
+            💬 Send Code on WhatsApp
+        </a>
+
+        <div style="margin-top:20px; padding:15px; background:#f8f9fa; border-radius:8px;">
+            <p style="font-size:14px; color:#666; margin:0;">
+                <strong>📝 What happens next?</strong><br>
+                1. You'll receive a confirmation from us on WhatsApp<br>
+                2. We'll confirm your payment and request your photos<br>
+                3. Send your photos and we'll start editing!
+            </p>
+        </div>
+
+        <a href="/" style="display:block; text-align:center; margin-top:15px; color:#4a90d9;">← Back to Home</a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code') || localStorage.getItem('checkoutRequestID');
+
+        const codeElement = document.getElementById('checkoutCode');
+        const whatsappLink = document.getElementById('whatsappLink');
+
+        // YOUR WHATSAPP NUMBER - CHANGE THIS!
+        const YOUR_PHONE = '254712345678';
+
+        if (code) {
+            codeElement.textContent = code;
+            whatsappLink.href = `https://wa.me/${YOUR_PHONE}?text=${encodeURIComponent(code)}`;
+            localStorage.setItem('checkoutRequestID', code);
+        } else {
+            codeElement.textContent = 'Error: No code found. Please go back and try again.';
+            whatsappLink.style.display = 'none';
+        }
+
+        function copyCode() {
+            const code = document.getElementById('checkoutCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ Code copied to clipboard!');
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('✅ Code copied to clipboard!');
+            });
+        }
+    </script>
+</body>
+</html>
